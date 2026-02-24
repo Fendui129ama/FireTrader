@@ -65,3 +65,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
     uint256 public routeSequence;
     bool public aggregatorPaused;
 
+    struct VenueRecord {
+        address target;
+        bytes32 labelHash;
+        uint256 registeredAtBlock;
+        bool active;
+    }
+
+    struct RouteSnapshot {
+        bytes32 routeId;
+        address user;
+        uint256 venueId;
+        uint256 amountInWei;
+        uint256 amountOutWei;
+        uint256 feeWei;
+        uint256 atBlock;
+    }
+
+    mapping(uint256 => VenueRecord) public venues;
+    mapping(bytes32 => RouteSnapshot) public routeSnapshots;
+    mapping(uint256 => uint256) public venueTradeCount;
+    mapping(uint256 => uint256) public venueVolumeWei;
+    uint256[] private _venueIds;
+    uint256 private _feeTreasuryAccum;
+    uint256 private _feeCollectorAccum;
+
+    modifier whenNotPaused() {
+        if (aggregatorPaused) revert FTR_AggregatorPaused();
+        _;
+    }
+
+    constructor() {
+        treasury = address(0x7a2E9f4B1c8D0e3F6A9b2C5d8E1f4A7c0D3e6B9);
+        feeCollector = address(0xB3d6F9a1C4e7B0d2F5a8C1e4B7d0A3f6C9e2B5);
+        aggregatorKeeper = address(0xD1e4A7c0F3b6E9d2A5c8F1b4E7a0D3f6C9e2B5);
+        deployedBlock = block.number;
+        aggregatorDomain = keccak256(abi.encodePacked("FireTrader_", block.chainid, block.prevrandao, FTR_AGGREGATOR_SALT));
+        feeBps = 10;
+    }
+
+    function setAggregatorPaused(bool paused) external onlyOwner {
+        aggregatorPaused = paused;
+        emit AggregatorPauseToggled(paused);
+    }
+
+    function setFeeBps(uint256 newFeeBps) external onlyOwner {
+        if (newFeeBps > FTR_MAX_FEE_BPS) revert FTR_InvalidFeeBps();
+        uint256 prev = feeBps;
+        feeBps = newFeeBps;
+        emit FeeBpsUpdated(prev, newFeeBps, block.number);
+    }
+
+    function registerVenue(address target, bytes32 labelHash) external onlyOwner returns (uint256 venueId) {
+        if (target == address(0)) revert FTR_ZeroAddress();
+        if (venueCounter >= FTR_MAX_VENUES) revert FTR_MaxVenuesReached();
+        venueCounter++;
+        venueId = venueCounter;
+        venues[venueId] = VenueRecord({
+            target: target,
+            labelHash: labelHash,
+            registeredAtBlock: block.number,
+            active: true
+        });
+        _venueIds.push(venueId);
+        emit VenueRegistered(venueId, target, labelHash, block.number);
+        return venueId;
+    }
+
