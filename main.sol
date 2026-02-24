@@ -534,3 +534,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
 
     function getRouteSnapshotFull(bytes32 routeId) external view returns (
         bytes32 id,
+        address user,
+        uint256 venueId,
+        uint256 amountInWei,
+        uint256 amountOutWei,
+        uint256 feeWei,
+        uint256 atBlock
+    ) {
+        RouteSnapshot storage r = routeSnapshots[routeId];
+        return (r.routeId, r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
+    }
+
+    function treasuryAccumulated() external view returns (uint256) {
+        return _feeTreasuryAccum;
+    }
+
+    function collectorAccumulated() external view returns (uint256) {
+        return _feeCollectorAccum;
+    }
+
+    function domainHash() external view returns (bytes32) {
+        return aggregatorDomain;
+    }
+
+    function sequenceNumber() external view returns (uint256) {
+        return routeSequence;
+    }
+
+    function venueTarget(uint256 venueId) external view returns (address) {
+        return venues[venueId].target;
+    }
+
+    function venueLabel(uint256 venueId) external view returns (bytes32) {
+        return venues[venueId].labelHash;
+    }
+
+    function venueRegisteredBlock(uint256 venueId) external view returns (uint256) {
+        return venues[venueId].registeredAtBlock;
+    }
+
+    function venueActive(uint256 venueId) external view returns (bool) {
+        return venues[venueId].active;
+    }
+
+    function venueTrades(uint256 venueId) external view returns (uint256) {
+        return venueTradeCount[venueId];
+    }
+
+    function venueVolume(uint256 venueId) external view returns (uint256) {
+        return venueVolumeWei[venueId];
+    }
+
+    function routeUser(bytes32 routeId) external view returns (address) {
+        return routeSnapshots[routeId].user;
+    }
+
+    function routeVenueId(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].venueId;
+    }
+
+    function routeAmountIn(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountInWei;
+    }
+
+    function routeAmountOut(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountOutWei;
+    }
+
