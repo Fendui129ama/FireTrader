@@ -132,3 +132,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         return venueId;
     }
 
+    function setVenueActive(uint256 venueId, bool active) external onlyOwner {
+        if (venues[venueId].target == address(0)) revert FTR_VenueNotFound();
+        venues[venueId].active = active;
+        emit VenueToggled(venueId, active, block.number);
+    }
+
+    function updateVenueLabel(uint256 venueId, bytes32 newLabelHash) external onlyOwner {
+        if (venues[venueId].target == address(0)) revert FTR_VenueNotFound();
+        bytes32 prev = venues[venueId].labelHash;
+        venues[venueId].labelHash = newLabelHash;
+        emit VenueLabelUpdated(venueId, prev, newLabelHash, block.number);
+    }
+
+    function registerVenuesBatch(address[] calldata targets, bytes32[] calldata labelHashes) external onlyOwner returns (uint256[] memory venueIds) {
+        if (targets.length != labelHashes.length) revert FTR_ArrayLengthMismatch();
+        if (targets.length > FTR_MAX_BATCH_QUOTE) revert FTR_BatchTooLarge();
+        venueIds = new uint256[](targets.length);
+        for (uint256 i = 0; i < targets.length; i++) {
+            if (targets[i] == address(0)) revert FTR_ZeroAddress();
+            if (venueCounter >= FTR_MAX_VENUES) revert FTR_MaxVenuesReached();
+            venueCounter++;
+            uint256 vid = venueCounter;
+            venues[vid] = VenueRecord({
+                target: targets[i],
+                labelHash: labelHashes[i],
+                registeredAtBlock: block.number,
+                active: true
+            });
+            _venueIds.push(vid);
+            venueIds[i] = vid;
+            emit VenueRegistered(vid, targets[i], labelHashes[i], block.number);
+        }
+        emit BatchVenuesRegistered(venueIds, block.number);
+    }
+
+    function routeTrade(
+        uint256 venueId,
+        uint256 minOutWei,
+        bytes calldata payload
+    ) external payable whenNotPaused nonReentrant returns (bytes32 routeId, uint256 amountOutWei) {
+        VenueRecord storage v = venues[venueId];
+        if (v.target == address(0)) revert FTR_VenueNotFound();
+        if (!v.active) revert FTR_VenueInactive();
+        if (msg.value == 0) revert FTR_ZeroAmount();
+
+        uint256 feeWei = (msg.value * feeBps) / FTR_BPS_BASE;
+        uint256 halfFee = feeWei / 2;
+        _feeTreasuryAccum += halfFee;
+        _feeCollectorAccum += (feeWei - halfFee);
+        uint256 sentToVenue = msg.value - feeWei;
+
+        (bool ok, bytes memory result) = v.target.call{value: sentToVenue}(payload);
+        if (!ok) revert FTR_TransferFailed();
+        if (result.length >= 32) {
+            try abi.decode(result, (uint256)) returns (uint256 out) { amountOutWei = out; } catch { amountOutWei = 0; }
+        } else {
+            amountOutWei = 0;
+        }
+        if (minOutWei > 0 && amountOutWei < minOutWei) revert FTR_InsufficientOutput();
+
+        routeSequence++;
+        routeId = keccak256(abi.encodePacked(aggregatorDomain, msg.sender, venueId, msg.value, routeSequence, block.number));
+        routeSnapshots[routeId] = RouteSnapshot({
+            routeId: routeId,
+            user: msg.sender,
+            venueId: venueId,
+            amountInWei: msg.value,
