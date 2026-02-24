@@ -668,3 +668,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         });
     }
 
+    function getMultipleVenueTargets(uint256[] calldata venueIds) external view returns (address[] memory targets) {
+        targets = new address[](venueIds.length);
+        for (uint256 i = 0; i < venueIds.length; i++) targets[i] = venues[venueIds[i]].target;
+    }
+
+    function getMultipleVenueActive(uint256[] calldata venueIds) external view returns (bool[] memory actives) {
+        actives = new bool[](venueIds.length);
+        for (uint256 i = 0; i < venueIds.length; i++) actives[i] = venues[venueIds[i]].active && venues[venueIds[i]].target != address(0);
+    }
+
+    function getMultipleVenueVolume(uint256[] calldata venueIds) external view returns (uint256[] memory volumes) {
+        volumes = new uint256[](venueIds.length);
+        for (uint256 i = 0; i < venueIds.length; i++) volumes[i] = venueVolumeWei[venueIds[i]];
+    }
+
+    function getMultipleVenueTradeCount(uint256[] calldata venueIds) external view returns (uint256[] memory counts) {
+        counts = new uint256[](venueIds.length);
+        for (uint256 i = 0; i < venueIds.length; i++) counts[i] = venueTradeCount[venueIds[i]];
+    }
+
+    function bpsDenom() external pure returns (uint256) { return FTR_BPS_BASE; }
+    function maxFeeBpsConstant() external pure returns (uint256) { return FTR_MAX_FEE_BPS; }
+    function maxVenuesConstant() external pure returns (uint256) { return FTR_MAX_VENUES; }
+    function aggregatorSaltConstant() external pure returns (uint256) { return FTR_AGGREGATOR_SALT; }
+    function maxBatchQuoteConstant() external pure returns (uint256) { return FTR_MAX_BATCH_QUOTE; }
+
+    function totalVolume() external view returns (uint256) {
+        return this.totalVolumeAcrossVenues();
+    }
+
+    function totalTrades() external view returns (uint256) {
+        return this.totalTradesAcrossVenues();
+    }
+
+    function estimateFeeWei(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function estimateNetToVenue(uint256 amountWei) external view returns (uint256) {
+        return amountWei - (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function getVenueInfo(uint256 venueId) external view returns (
+        address targetAddr,
+        bytes32 labelHashVal,
+        uint256 registeredBlock,
+        bool isActive,
+        uint256 tradesCount,
+        uint256 volumeTotalWei
+    ) {
+        VenueRecord storage vr = venues[venueId];
+        return (vr.target, vr.labelHash, vr.registeredAtBlock, vr.active, venueTradeCount[venueId], venueVolumeWei[venueId]);
+    }
+
+    function getRouteInfo(bytes32 routeId) external view returns (
+        address userAddr,
+        uint256 venueIdVal,
+        uint256 amountIn,
+        uint256 amountOut,
+        uint256 feeWeiVal,
+        uint256 blockNum
+    ) {
+        RouteSnapshot storage r = routeSnapshots[routeId];
+        return (r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
+    }
+
+    function getConstantsFull() external pure returns (
