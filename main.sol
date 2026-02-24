@@ -400,3 +400,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         return _feeCollectorAccum;
     }
 
+    function getTotalFeesAccumulated() external view returns (uint256) {
+        return _feeTreasuryAccum + _feeCollectorAccum;
+    }
+
+    function getRouteUser(bytes32 routeId) external view returns (address) {
+        return routeSnapshots[routeId].user;
+    }
+
+    function getRouteVenueId(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].venueId;
+    }
+
+    function getRouteAmountIn(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountInWei;
+    }
+
+    function getRouteAmountOut(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountOutWei;
+    }
+
+    function getRouteFeeWei(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].feeWei;
+    }
+
+    function getRouteAtBlock(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].atBlock;
+    }
+
+    function hasRoute(bytes32 routeId) external view returns (bool) {
+        return routeSnapshots[routeId].atBlock != 0;
+    }
+
+    function venueCount() external view returns (uint256) {
+        return venueCounter;
+    }
+
+    function configTreasury() external view returns (address) { return treasury; }
+    function configFeeCollector() external view returns (address) { return feeCollector; }
+    function configKeeper() external view returns (address) { return aggregatorKeeper; }
+    function configFeeBps() external view returns (uint256) { return feeBps; }
+    function configDeployedBlock() external view returns (uint256) { return deployedBlock; }
+    function configPaused() external view returns (bool) { return aggregatorPaused; }
+
+    function getConstants() external pure returns (
+        uint256 bpsBase,
+        uint256 maxFeeBps,
+        uint256 maxVenues,
+        uint256 maxBatchQuote
+    ) {
+        return (FTR_BPS_BASE, FTR_MAX_FEE_BPS, FTR_MAX_VENUES, FTR_MAX_BATCH_QUOTE);
+    }
+
+    function getConfigSnapshot() external view returns (
+        address treasury_,
+        address feeCollector_,
+        address keeper_,
+        uint256 feeBps_,
+        uint256 deployedBlock_,
+        uint256 venueCounter_,
+        uint256 routeSequence_,
+        bool paused_
+    ) {
+        return (treasury, feeCollector, aggregatorKeeper, feeBps, deployedBlock, venueCounter, routeSequence, aggregatorPaused);
+    }
+
+    function totalVolumeAcrossVenues() external view returns (uint256 total) {
+        for (uint256 i = 0; i < _venueIds.length; i++) total += venueVolumeWei[_venueIds[i]];
