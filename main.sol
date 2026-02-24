@@ -802,3 +802,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         return (amountWei * feeBps) / FTR_BPS_BASE;
     }
 
+    function computeNet(uint256 amountWei) external view returns (uint256) {
+        return amountWei - (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function getVenueIdsList() external view returns (uint256[] memory) {
+        return _venueIds;
+    }
+
+    function activeVenueCount() external view returns (uint256) {
+        return this.getActiveVenueCount();
+    }
+
+    function totalVolumeWei() external view returns (uint256) {
+        return this.totalVolumeAcrossVenues();
+    }
+
+    function totalTradeCount() external view returns (uint256) {
+        return this.totalTradesAcrossVenues();
+    }
+
+    function treasuryFees() external view returns (uint256) {
+        return _feeTreasuryAccum;
+    }
+
+    function collectorFees() external view returns (uint256) {
+        return _feeCollectorAccum;
+    }
+
+    function domain() external view returns (bytes32) {
+        return aggregatorDomain;
+    }
+
+    function nextSequence() external view returns (uint256) {
+        return routeSequence + 1;
+    }
+
+    function getVenueByIndex(uint256 index) external view returns (uint256) {
+        return _venueIds[index];
+    }
+
+    function getVenueCount() external view returns (uint256) {
+        return _venueIds.length;
+    }
+
+    function getRouteSnapshotStruct(bytes32 routeId) external view returns (RouteSnapshot memory) {
+        return routeSnapshots[routeId];
+    }
+
+    function getVenueViewStruct(uint256 venueId) external view returns (VenueView memory) {
+        return this.getVenueView(venueId);
+    }
+
+    function getVenueViewsForIds(uint256[] calldata ids) external view returns (VenueView[] memory) {
+        return this.getVenueViewBatch(ids);
+    }
+
+    function feeTreasury() external view returns (uint256) {
+        return _feeTreasuryAccum;
+    }
+
+    function feeCollectorAccum() external view returns (uint256) {
+        return _feeCollectorAccum;
+    }
+
+    function aggregatorDomainBytes() external view returns (bytes32) {
+        return aggregatorDomain;
+    }
