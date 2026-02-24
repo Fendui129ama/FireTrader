@@ -467,3 +467,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
 
     function totalVolumeAcrossVenues() external view returns (uint256 total) {
         for (uint256 i = 0; i < _venueIds.length; i++) total += venueVolumeWei[_venueIds[i]];
+    }
+
+    function totalTradesAcrossVenues() external view returns (uint256 total) {
+        for (uint256 i = 0; i < _venueIds.length; i++) total += venueTradeCount[_venueIds[i]];
+    }
+
+    function getFeeSplit(uint256 amountWei) external view returns (uint256 toTreasury, uint256 toCollector) {
+        uint256 fee = (amountWei * feeBps) / FTR_BPS_BASE;
+        toTreasury = fee / 2;
+        toCollector = fee - toTreasury;
+    }
+
+    function estimateFee(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function estimateAmountToVenue(uint256 amountWei) external view returns (uint256) {
+        return amountWei - (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function getVenueIdsRange(uint256 fromId, uint256 toId) external view returns (uint256[] memory ids) {
+        if (fromId > toId || toId > venueCounter) return new uint256[](0);
+        uint256 size = toId - fromId + 1;
+        ids = new uint256[](size);
+        for (uint256 i = 0; i < size; i++) ids[i] = fromId + i;
+    }
+
+    function isVenueRegistered(uint256 venueId) external view returns (bool) {
+        return venues[venueId].target != address(0);
+    }
+
+    function getActiveVenueCount() external view returns (uint256 count) {
+        for (uint256 i = 0; i < _venueIds.length; i++) {
+            if (venues[_venueIds[i]].active) count++;
+        }
+    }
+
+    function feeKindTreasury() external pure returns (uint8) { return FTR_FEE_KIND_TREASURY; }
+    function feeKindCollector() external pure returns (uint8) { return FTR_FEE_KIND_COLLECTOR; }
+
+    function getVenueAtIndex(uint256 index) external view returns (uint256) {
+        return _venueIds[index];
+    }
+
+    function getVenueIdsLength() external view returns (uint256) {
+        return _venueIds.length;
+    }
+
+    function getAllVenueViews() external view returns (VenueView[] memory out) {
+        out = new VenueView[](_venueIds.length);
+        for (uint256 i = 0; i < _venueIds.length; i++) {
+            uint256 vid = _venueIds[i];
+            VenueRecord storage vr = venues[vid];
+            out[i] = VenueView({
+                venueId: vid,
+                target: vr.target,
+                labelHash: vr.labelHash,
+                registeredAtBlock: vr.registeredAtBlock,
+                active: vr.active,
+                tradeCount: venueTradeCount[vid],
+                volumeWei: venueVolumeWei[vid]
+            });
+        }
+    }
+
+    function getRouteSnapshotFull(bytes32 routeId) external view returns (
+        bytes32 id,
