@@ -735,3 +735,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
     }
 
     function getConstantsFull() external pure returns (
+        uint256 bpsBaseVal,
+        uint256 maxFeeBpsVal,
+        uint256 maxVenuesVal,
+        uint256 maxBatchQuoteVal,
+        uint256 saltVal
+    ) {
+        return (FTR_BPS_BASE, FTR_MAX_FEE_BPS, FTR_MAX_VENUES, FTR_MAX_BATCH_QUOTE, FTR_AGGREGATOR_SALT);
+    }
+
+    function venueExists(uint256 venueId) external view returns (bool) {
+        return venues[venueId].target != address(0);
+    }
+
+    function routeExists(bytes32 routeId) external view returns (bool) {
+        return routeSnapshots[routeId].atBlock != 0;
+    }
+
+    function getFirstVenueId() external view returns (uint256) {
+        return _venueIds.length > 0 ? _venueIds[0] : 0;
+    }
+
+    function getLastVenueId() external view returns (uint256) {
+        return _venueIds.length > 0 ? _venueIds[_venueIds.length - 1] : 0;
+    }
+
+    function getFeeAccumulatedTreasury() external view returns (uint256) {
+        return _feeTreasuryAccum;
+    }
+
+    function getFeeAccumulatedCollector() external view returns (uint256) {
+        return _feeCollectorAccum;
+    }
+
+    function getTotalFees() external view returns (uint256) {
+        return _feeTreasuryAccum + _feeCollectorAccum;
+    }
+
+    function getVenueList() external view returns (uint256[] memory) {
+        return _venueIds;
+    }
+
+    function getVenueRecord(uint256 venueId) external view returns (
+        address targetAddr,
+        bytes32 label,
+        uint256 registeredBlock,
+        bool isActive
+    ) {
+        VenueRecord storage vr = venues[venueId];
+        return (vr.target, vr.labelHash, vr.registeredAtBlock, vr.active);
+    }
+
+    function getRouteRecord(bytes32 routeId) external view returns (
+        address userAddr,
+        uint256 venueIdVal,
+        uint256 amountInWei,
+        uint256 amountOutWei,
+        uint256 feeWeiVal,
+        uint256 atBlockNum
+    ) {
+        RouteSnapshot storage r = routeSnapshots[routeId];
+        return (r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
+    }
+
+    function computeFee(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
