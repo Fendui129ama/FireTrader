@@ -936,3 +936,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         uint256 deployBlockVal,
         uint256 venueCountVal,
         uint256 routeSeqVal,
+        bool pausedVal
+    ) {
+        return (treasury, feeCollector, aggregatorKeeper, feeBps, deployedBlock, venueCounter, routeSequence, aggregatorPaused);
+    }
+
+    function getVenueFull(uint256 venueId) external view returns (
+        uint256 id,
+        address targetAddr,
+        bytes32 labelHashVal,
+        uint256 registeredAtBlockVal,
+        bool activeVal,
+        uint256 tradeCountVal,
+        uint256 volumeWeiVal
+    ) {
+        VenueRecord storage vr = venues[venueId];
+        return (venueId, vr.target, vr.labelHash, vr.registeredAtBlock, vr.active, venueTradeCount[venueId], venueVolumeWei[venueId]);
+    }
+
+    function getRouteFull(bytes32 routeId) external view returns (
+        bytes32 idVal,
+        address userVal,
+        uint256 venueIdVal,
+        uint256 amountInVal,
+        uint256 amountOutVal,
+        uint256 feeVal,
+        uint256 blockVal
+    ) {
+        RouteSnapshot storage r = routeSnapshots[routeId];
+        return (r.routeId, r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
+    }
+
+    function getAllVenueIds() external view returns (uint256[] memory) {
+        return _venueIds;
+    }
+
+    function getVenueTargetsBatch(uint256[] calldata ids) external view returns (address[] memory) {
+        return this.getMultipleVenueTargets(ids);
+    }
+
+    function getVenueVolumesBatch(uint256[] calldata ids) external view returns (uint256[] memory) {
+        return this.getMultipleVenueVolume(ids);
+    }
+
+    function getVenueTradeCountsBatch(uint256[] calldata ids) external view returns (uint256[] memory) {
+        return this.getMultipleVenueTradeCount(ids);
+    }
+
+    function feeForAmount(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function netAfterFee(uint256 amountWei) external view returns (uint256) {
+        return amountWei - (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function splitFee(uint256 amountWei) external view returns (uint256 toTreasury, uint256 toCollector) {
+        return this.getFeeSplit(amountWei);
+    }
+
+    function isPausedState() external view returns (bool) {
+        return aggregatorPaused;
+    }
+
+    function treasuryAddress() external view returns (address) {
+        return treasury;
+    }
+
