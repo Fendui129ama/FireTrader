@@ -1003,3 +1003,62 @@ contract FireTrader is ReentrancyGuard, Ownable {
         return treasury;
     }
 
+    function feeCollectorAddress() external view returns (address) {
+        return feeCollector;
+    }
+
+    function keeperAddress() external view returns (address) {
+        return aggregatorKeeper;
+    }
+
+    function feeBpsValue() external view returns (uint256) {
+        return feeBps;
+    }
+
+    function deployedBlockNumber() external view returns (uint256) {
+        return deployedBlock;
+    }
+
+    function venueCounterValue() external view returns (uint256) {
+        return venueCounter;
+    }
+
+    function routeSequenceValue() external view returns (uint256) {
+        return routeSequence;
+    }
+
+    function listVenueIds() external view returns (uint256[] memory) {
+        return _venueIds;
+    }
+
+    function getVenueAt(uint256 index) external view returns (uint256 venueId) {
+        return _venueIds[index];
+    }
+
+    function numVenues() external view returns (uint256) {
+        return _venueIds.length;
+    }
+
+    function hasVenue(uint256 venueId) external view returns (bool) {
+        return venues[venueId].target != address(0);
+    }
+
+    function hasRoute(bytes32 routeId) external view returns (bool) {
+        return routeSnapshots[routeId].atBlock != 0;
+    }
+
+    function aggregateVolume() external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 i = 0; i < _venueIds.length; i++) t += venueVolumeWei[_venueIds[i]];
+        return t;
+    }
+
+    function aggregateTrades() external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 i = 0; i < _venueIds.length; i++) t += venueTradeCount[_venueIds[i]];
+        return t;
+    }
+
+    receive() external payable {}
+}
+
