@@ -199,3 +199,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
             user: msg.sender,
             venueId: venueId,
             amountInWei: msg.value,
+            amountOutWei: amountOutWei,
+            feeWei: feeWei,
+            atBlock: block.number
+        });
+        venueTradeCount[venueId]++;
+        venueVolumeWei[venueId] += msg.value;
+        emit TradeRouted(routeId, msg.sender, venueId, msg.value, amountOutWei, feeWei, block.number);
+        emit RouteIdRecorded(routeId, venueId, block.number);
+        return (routeId, amountOutWei);
+    }
+
+    function sweepTreasuryFees() external nonReentrant {
+        if (msg.sender != treasury) revert FTR_NotKeeper();
+        uint256 amount = _feeTreasuryAccum;
+        if (amount == 0) revert FTR_ZeroAmount();
+        _feeTreasuryAccum = 0;
+        (bool sent,) = treasury.call{value: amount}("");
+        if (!sent) revert FTR_TransferFailed();
+        emit FeeSwept(treasury, amount, FTR_FEE_KIND_TREASURY, block.number);
+    }
+
+    function sweepCollectorFees() external nonReentrant {
+        if (msg.sender != feeCollector) revert FTR_NotKeeper();
+        uint256 amount = _feeCollectorAccum;
+        if (amount == 0) revert FTR_ZeroAmount();
+        _feeCollectorAccum = 0;
+        (bool sent,) = feeCollector.call{value: amount}("");
+        if (!sent) revert FTR_TransferFailed();
+        emit FeeSwept(feeCollector, amount, FTR_FEE_KIND_COLLECTOR, block.number);
+    }
+
+    function getVenue(uint256 venueId) external view returns (
+        address target,
+        bytes32 labelHash,
+        uint256 registeredAtBlock,
+        bool active
+    ) {
+        VenueRecord storage v = venues[venueId];
+        return (v.target, v.labelHash, v.registeredAtBlock, v.active);
+    }
+
+    function getVenueIds() external view returns (uint256[] memory) {
+        return _venueIds;
+    }
+
+    function getActiveVenueIds() external view returns (uint256[] memory ids) {
+        uint256 n = 0;
+        for (uint256 i = 0; i < _venueIds.length; i++) {
+            if (venues[_venueIds[i]].active) n++;
+        }
+        ids = new uint256[](n);
+        n = 0;
+        for (uint256 i = 0; i < _venueIds.length; i++) {
+            if (venues[_venueIds[i]].active) ids[n++] = _venueIds[i];
+        }
+    }
+
+    function getRouteSnapshot(bytes32 routeId) external view returns (
+        address user,
+        uint256 venueId,
+        uint256 amountInWei,
+        uint256 amountOutWei,
+        uint256 feeWei,
+        uint256 atBlock
+    ) {
+        RouteSnapshot storage r = routeSnapshots[routeId];
+        return (r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
