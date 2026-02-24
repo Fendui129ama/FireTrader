@@ -869,3 +869,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
     function aggregatorDomainBytes() external view returns (bytes32) {
         return aggregatorDomain;
     }
+
+    function routeSeq() external view returns (uint256) {
+        return routeSequence;
+    }
+
+    function venueTargetAddress(uint256 venueId) external view returns (address) {
+        return venues[venueId].target;
+    }
+
+    function venueLabelHash(uint256 venueId) external view returns (bytes32) {
+        return venues[venueId].labelHash;
+    }
+
+    function venueRegBlock(uint256 venueId) external view returns (uint256) {
+        return venues[venueId].registeredAtBlock;
+    }
+
+    function venueIsActive(uint256 venueId) external view returns (bool) {
+        return venues[venueId].active;
+    }
+
+    function venueNumTrades(uint256 venueId) external view returns (uint256) {
+        return venueTradeCount[venueId];
+    }
+
+    function venueTotalVolume(uint256 venueId) external view returns (uint256) {
+        return venueVolumeWei[venueId];
+    }
+
+    function routeSnapshotUser(bytes32 routeId) external view returns (address) {
+        return routeSnapshots[routeId].user;
+    }
+
+    function routeSnapshotVenueId(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].venueId;
+    }
+
+    function routeSnapshotAmountIn(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountInWei;
+    }
+
+    function routeSnapshotAmountOut(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].amountOutWei;
+    }
+
+    function routeSnapshotFee(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].feeWei;
+    }
+
+    function routeSnapshotBlock(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].atBlock;
+    }
+
+    function getBpsBase() external pure returns (uint256) { return FTR_BPS_BASE; }
+    function getMaxFeeBps() external pure returns (uint256) { return FTR_MAX_FEE_BPS; }
+    function getMaxVenues() external pure returns (uint256) { return FTR_MAX_VENUES; }
+    function getAggregatorSalt() external pure returns (uint256) { return FTR_AGGREGATOR_SALT; }
+    function getMaxBatchQuote() external pure returns (uint256) { return FTR_MAX_BATCH_QUOTE; }
+
+    function getFullConfig() external view returns (
+        address treasuryAddr,
+        address feeCollectorAddr,
+        address keeperAddr,
+        uint256 feeBpsVal,
+        uint256 deployBlockVal,
+        uint256 venueCountVal,
+        uint256 routeSeqVal,
