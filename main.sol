@@ -601,3 +601,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
         return routeSnapshots[routeId].amountOutWei;
     }
 
+    function routeFee(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].feeWei;
+    }
+
+    function routeBlock(bytes32 routeId) external view returns (uint256) {
+        return routeSnapshots[routeId].atBlock;
+    }
+
+    function computeRouteId(address user, uint256 venueId, uint256 amountWei, uint256 seq) external view returns (bytes32) {
+        return keccak256(abi.encodePacked(aggregatorDomain, user, venueId, amountWei, seq, block.number));
+    }
+
+    function computeRouteIdSimple(uint256 venueId, uint256 amountWei) external view returns (bytes32) {
+        return keccak256(abi.encodePacked(aggregatorDomain, msg.sender, venueId, amountWei, routeSequence + 1, block.number));
+    }
+
+    function getVenueIdsFromTo(uint256 fromIdx, uint256 toIdx) external view returns (uint256[] memory ids) {
+        if (fromIdx > toIdx || toIdx >= _venueIds.length) return new uint256[](0);
+        uint256 size = toIdx - fromIdx + 1;
+        ids = new uint256[](size);
+        for (uint256 i = 0; i < size; i++) ids[i] = _venueIds[fromIdx + i];
+    }
+
+    function getActiveVenueIdsPaginated(uint256 offset, uint256 limit) external view returns (uint256[] memory ids) {
+        uint256[] memory active = this.getActiveVenueIds();
+        uint256 len = active.length;
+        if (offset >= len) return new uint256[](0);
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        uint256 size = end - offset;
+        ids = new uint256[](size);
+        for (uint256 i = 0; i < size; i++) ids[i] = active[offset + i];
+    }
+
+    function getFeeForAmountWei(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function getAmountToVenueAfterFee(uint256 amountWei) external view returns (uint256) {
+        return amountWei - (amountWei * feeBps) / FTR_BPS_BASE;
+    }
+
+    function getConfigTreasury() external view returns (address) { return treasury; }
+    function getConfigFeeCollector() external view returns (address) { return feeCollector; }
+    function getConfigKeeper() external view returns (address) { return aggregatorKeeper; }
+    function getConfigFeeBps() external view returns (uint256) { return feeBps; }
+    function getConfigDeployedBlock() external view returns (uint256) { return deployedBlock; }
+    function getConfigPaused() external view returns (bool) { return aggregatorPaused; }
+
+    function supportsVenue(uint256 venueId) external view returns (bool) {
+        return venues[venueId].target != address(0);
+    }
+
+    function getVenueViewByIndex(uint256 index) external view returns (VenueView memory) {
+        uint256 vid = _venueIds[index];
+        VenueRecord storage vr = venues[vid];
+        return VenueView({
+            venueId: vid,
+            target: vr.target,
+            labelHash: vr.labelHash,
+            registeredAtBlock: vr.registeredAtBlock,
+            active: vr.active,
+            tradeCount: venueTradeCount[vid],
+            volumeWei: venueVolumeWei[vid]
+        });
+    }
+
