@@ -266,3 +266,70 @@ contract FireTrader is ReentrancyGuard, Ownable {
     ) {
         RouteSnapshot storage r = routeSnapshots[routeId];
         return (r.user, r.venueId, r.amountInWei, r.amountOutWei, r.feeWei, r.atBlock);
+    }
+
+    function getFeeTreasuryAccum() external view returns (uint256) {
+        return _feeTreasuryAccum;
+    }
+
+    function getFeeCollectorAccum() external view returns (uint256) {
+        return _feeCollectorAccum;
+    }
+
+    function getConfig() external view returns (
+        address treasury_,
+        address feeCollector_,
+        address aggregatorKeeper_,
+        uint256 feeBps_,
+        uint256 deployedBlock_,
+        bool aggregatorPaused_
+    ) {
+        return (treasury, feeCollector, aggregatorKeeper, feeBps, deployedBlock, aggregatorPaused);
+    }
+
+    function getVenueTradeCount(uint256 venueId) external view returns (uint256) {
+        return venueTradeCount[venueId];
+    }
+
+    function getVenueVolumeWei(uint256 venueId) external view returns (uint256) {
+        return venueVolumeWei[venueId];
+    }
+
+    function isVenueActive(uint256 venueId) external view returns (bool) {
+        return venues[venueId].active && venues[venueId].target != address(0);
+    }
+
+    function totalVenues() external view returns (uint256) {
+        return venueCounter;
+    }
+
+    function nextRouteSequence() external view returns (uint256) {
+        return routeSequence + 1;
+    }
+
+    function getAggregatorDomain() external view returns (bytes32) {
+        return aggregatorDomain;
+    }
+
+    struct VenueView {
+        uint256 venueId;
+        address target;
+        bytes32 labelHash;
+        uint256 registeredAtBlock;
+        bool active;
+        uint256 tradeCount;
+        uint256 volumeWei;
+    }
+
+    function getVenueView(uint256 venueId) external view returns (VenueView memory v) {
+        VenueRecord storage vr = venues[venueId];
+        if (vr.target == address(0)) return v;
+        v.venueId = venueId;
+        v.target = vr.target;
+        v.labelHash = vr.labelHash;
+        v.registeredAtBlock = vr.registeredAtBlock;
+        v.active = vr.active;
+        v.tradeCount = venueTradeCount[venueId];
+        v.volumeWei = venueVolumeWei[venueId];
+    }
+
